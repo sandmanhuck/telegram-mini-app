@@ -182,98 +182,76 @@
             </div>
         </div>
     </div>
+       <script>
+    const WEBHOOK_URL = 'https://hook.eu2.make.com/y4jpc7c3bh1f9mf6vgdoan8sly62p9wy';
+    
+    function addMessage(text, type = 'bot') {
+        const messagesContainer = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        messageDiv.innerHTML = text;
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 
-    <script>
-       const WEBHOOK_URL = 'https://corsproxy.io/?' + encodeURIComponent('https://hook.eu2.make.com/y4jpc7c3bh1f9mf6vgdoan8sly62p9wy');
+    function showTyping() {
+        document.getElementById('typingIndicator').classList.add('active');
+    }
 
+    function hideTyping() {
+        document.getElementById('typingIndicator').classList.remove('active');
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
         
-        function addMessage(text, type = 'bot') {
-            const messagesContainer = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-            messageDiv.innerHTML = text;
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+        if (!message) return;
 
-        function showTyping() {
-            document.getElementById('typingIndicator').classList.add('active');
-        }
+        addMessage(message, 'user');
+        input.value = '';
+        showTyping();
 
-        function hideTyping() {
-            document.getElementById('typingIndicator').classList.remove('active');
-        }
+        try {
+            // Folosește fetch cu mode no-cors
+            await fetch(WEBHOOK_URL + '?message=' + encodeURIComponent(message) + '&timestamp=' + Date.now() + '&session=' + getSessionId(), {
+                method: 'GET',
+                mode: 'no-cors'
+            });
 
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
+            hideTyping();
+            addMessage('✅ Comanda a fost trimisă cu succes!', 'system');
             
-            if (!message) return;
-
-            // Afișează mesajul user-ului
-            addMessage(message, 'user');
-            input.value = '';
-
-            // Arată typing indicator
-            showTyping();
-
-            try {
-                // Trimite către Make
-                const response = await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: message,
-                        timestamp: new Date().toISOString(),
-                        session_id: getSessionId()
-                    })
-                });
-
-                hideTyping();
-
-                if (response.ok) {
-                    const data = await response.json();
-                    // Dacă Make returnează un răspuns, afișează-l
-                    if (data.reply) {
-                        addMessage(data.reply, 'bot');
-                    } else {
-                        addMessage('✅ Comanda a fost trimisă cu succes!', 'system');
-                    }
-                } else {
-                    addMessage('❌ Eroare la trimiterea comenzii. Încearcă din nou.', 'system');
-                }
-            } catch (error) {
-                hideTyping();
-                addMessage('❌ Eroare de conexiune. Verifică internetul.', 'system');
-            }
+        } catch (error) {
+            hideTyping();
+            addMessage('❌ Eroare: ' + error.message, 'system');
         }
+    }
 
-        function quickCommand(cmd) {
-            document.getElementById('messageInput').value = cmd;
+    function quickCommand(cmd) {
+        document.getElementById('messageInput').value = cmd;
+        sendMessage();
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
             sendMessage();
         }
+    }
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
+    function getSessionId() {
+        let sessionId = localStorage.getItem('chat_session_id');
+        if (!sessionId) {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('chat_session_id', sessionId);
         }
+        return sessionId;
+    }
 
-        function getSessionId() {
-            let sessionId = localStorage.getItem('chat_session_id');
-            if (!sessionId) {
-                sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('chat_session_id', sessionId);
-            }
-            return sessionId;
-        }
+    setTimeout(() => {
+        addMessage('Comenzi disponibile:<br>• <b>start</b> - pornește automatizarea<br>• <b>stop</b> - oprește automatizarea<br>• <b>status</b> - verifică starea', 'bot');
+    }, 1000);
+</script>
 
-        // Mesaj de bun venit după 1 secundă
-        setTimeout(() => {
-            addMessage('Comenzi disponibile:<br>• <b>start</b> - pornește automatizarea<br>• <b>stop</b> - oprește automatizarea<br>• <b>status</b> - verifică starea', 'bot');
-        }, 1000);
-    </script>
 </body>
 </html>
